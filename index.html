@@ -7,36 +7,44 @@
 		<script src="stomp.js"></script>
 
 		<script>
+			var localhost = "192.168.204.129";
+			var nodes = new Array(); //replica nodes
+			//getNodesIP();
 			readNews();
 
 
 			function readNews(){
+				/*alert("result");
+				$.get("http://"+localhost+"/table.php?TYPE=GET", function(result){
+					//document.getElementById("txtNews").innerHTML = atob(result);//atob is used for decoding base64
+					alert(result);
+				});*/
 				if (window.XMLHttpRequest) {
 					// code for IE7+, Firefox, Chrome, Opera, Safari
-	  				xmlhttp = new XMLHttpRequest();
-	  			} else {
-	    				// code for IE6, IE5
+					xmlhttp = new XMLHttpRequest();
+				} else {
+						// code for IE6, IE5
 					xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-	  			}
-	  			xmlhttp.onreadystatechange = function() {
-	  				if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-	  					document.getElementById("txtNews").innerHTML = atob(xmlhttp.responseText);//atob is used for decoding base64
+				}
+				xmlhttp.onreadystatechange = function() {
+					if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+						document.getElementById("txtNews").innerHTML = atob(xmlhttp.responseText);//atob is used for decoding base64
 						//display in table
-						/*var tbl=$("<table/>").attr("id","mytable");
-						$("#div1").append(tbl);
-						for(var i=0;i<obj.length;i++)
-						{
-							var tr="<tr>";
-							var td1="<td>"+obj[i]["id"]+"</td>";
-							var td2="<td>"+obj[i]["name"]+"</td>";
-							var td3="<td>"+obj[i]["color"]+"</td></tr>";
+						// var tbl=$("<table/>").attr("id","mytable");
+						// $("#div1").append(tbl);
+						// for(var i=0;i<obj.length;i++)
+						// {
+							// var tr="<tr>";
+						// 	var td1="<td>"+obj[i]["id"]+"</td>";
+						// 	var td2="<td>"+obj[i]["name"]+"</td>";
+						// 	var td3="<td>"+obj[i]["color"]+"</td></tr>";
 
-							$("#mytable").append(tr+td1+td2+td3); 
+						// 	$("#mytable").append(tr+td1+td2+td3); 
 
-						}*/
-	  				}
-	  			};
-				xmlhttp.open("GET","http://localhost/table.php?TYPE=GET",true);
+						// }
+					}
+				};
+				xmlhttp.open("GET","http://"+localhost+"/table.php?TYPE=GET",true);
 				xmlhttp.send();
 			}
 
@@ -47,70 +55,82 @@
 
 			//Using RabbitMQ to send log information
 			function globleLog(info){
-				RabbitMQ_send("log",info);
+				//RabbitMQ_send("log",info);
+			}
+			//Get nodes arrry which contain the IP address of the replicas
+			function getNodesIP(){
+
+				$.get("http://"+localhost+"/nodes.php?TYPE=GET", function(result){
+					alert(result);
+					for(var x in result ){ //x is index, result[x] is the object
+							nodes.push(result[x]);
+							//alert(result[x]['Name']);
+					}
+				});
+				
 			}
 			function updateNews(){
 				if (window.XMLHttpRequest) {
 					// code for IE7+, Firefox, Chrome, Opera, Safari
-	  				xmlhttp = new XMLHttpRequest();
-	  			} else {
-	    				// code for IE6, IE5
+					xmlhttp = new XMLHttpRequest();
+				} else {
+						// code for IE6, IE5
 					xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-	  			}
-	  			xmlhttp.onreadystatechange = function() {
-	  				if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-	  					//document.getElementById("txtNews").innerHTML = xmlhttp.responseText;
-	  					alert('Successed Added');
+				}
+				xmlhttp.onreadystatechange = function() {
+					if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+						//document.getElementById("txtNews").innerHTML = xmlhttp.responseText;
+						alert('Successed Added');
 						readNews();
 						syncNews();
 						globleLog("Successfully add News on Main Node.");
 					}else{
 						//alert(xmlhttp.readyState);
 					}
-	  			};
+				};
 
 				var e = document.getElementById('newsType');
 				var newsType = e.options[e.selectedIndex].value;
 
 				var news = document.getElementById('news').value;
-				xmlhttp.open("GET","http://localhost/table.php?TYPE=UPDATE&Type="+newsType+"&News="+news,true);
+				xmlhttp.open("GET","http://"+localhost+"/table.php?TYPE=UPDATE&Type="+newsType+"&News="+news,true);
 				xmlhttp.send();
 			
 			}
-                     
-                        /*$(document).ready(function(){
-                               	//$(window).on('beforeunload', function(){
-	                        //      socket.close();
-	                        //});
+					 
+						/*$(document).ready(function(){
+								//$(window).on('beforeunload', function(){
+							//      socket.close();
+							//});
 				WebSocketStompMock = SockJS;
-	                        var client, destination;
-        	                var url = 'ws://127.0.0.1:15674/stomp/websocket';
-	                        //var url = 'http://127.0.0.1:55674/stomp';
+							var client, destination;
+							var url = 'ws://127.0.0.1:15674/stomp/websocket';
+							//var url = 'http://127.0.0.1:55674/stomp';
 				var login = 'ds';
-                	        var passcode = 'abcd1234';
-                        	destination = '/exchange/distributedsystem';
+							var passcode = 'abcd1234';
+							destination = '/exchange/distributedsystem';
 
-                               	client = Stomp.client(url);
+								client = Stomp.client(url);
 
 				//var ws = new WebSocket('ws://127.0.0.1:15674/ws');
 				//var client = Stomp.over(ws);
 
-	                        // this allows to display debug logs directly on the web page
-        	        	 client.debug = function(str) {
-        		                $("#debug").append(str + "\n");
-                        	};
-	                        // the client is notified when it is connected to the server.
-	                        client.connect(login, passcode, function(frame) {
-        	                      	client.subscribe(destination, function(message) {
+							// this allows to display debug logs directly on the web page
+						 client.debug = function(str) {
+								$("#debug").append(str + "\n");
+							};
+							// the client is notified when it is connected to the server.
+							client.connect(login, passcode, function(frame) {
+									client.subscribe(destination, function(message) {
 						//call-back function after receive new message can process here
-        	        	     	});
-	                        });
-                               	function RabbitMQ_send(message_type,message){
-                       	                client.send(destination, {type:message_type}, message);
-                               	};
-                	                
-        	        });*/
-	                </script>
+								});
+							});
+								function RabbitMQ_send(message_type,message){
+										client.send(destination, {type:message_type}, message);
+								};
+									
+					});*/
+					</script>
 
 		</script>
 	</head>
