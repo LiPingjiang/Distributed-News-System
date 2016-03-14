@@ -22,10 +22,29 @@
 			}
 
 			//Used for synchronizing news on replica nodes' database
-			function syncNews(){
+			function syncNews(newsType,news){
+				for (var i in nodes) {
+					//nodea[i]['Name']
+					$.ajax({
+						type: 'POST',
+						url: "http://"+nodea[i]['IPAddress']+"/table.php?TYPE=UPDATE&Type="+newsType+"&News="+news,
+						complete: function(result){
+							localLog('synchronized News to node: '+ nodea[i]['Name']);
+						}
+					});
+					}
+			}
+			function localLog(Information){
+				var Timestamp = new Date().getTime();
+				$.ajax({
+					type: 'POST',
+					url: "http://"+localhost+"/log.php?TYPE=WRITE&Timestamp="+Timestamp+"&Information="+Information,
+					complete: function(result){
+						
+					}
+				});
 				
 			}
-
 			//Using RabbitMQ to send log information
 			function globleLog(info){
 				//RabbitMQ_send("log",info);
@@ -34,7 +53,7 @@
 			function getNodesIP(){
 
 				$.get("http://"+localhost+"/nodes.php?TYPE=GET", function(result){
-					alert(result);
+					//alert(result);
 					for(var x in result ){ //x is index, result[x] is the object
 							nodes.push(result[x]);
 							//alert(result[x]['Name']);
@@ -43,31 +62,21 @@
 				
 			}
 			function updateNews(){
-				if (window.XMLHttpRequest) {
-					// code for IE7+, Firefox, Chrome, Opera, Safari
-					xmlhttp = new XMLHttpRequest();
-				} else {
-						// code for IE6, IE5
-					xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-				}
-				xmlhttp.onreadystatechange = function() {
-					if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-						//document.getElementById("txtNews").innerHTML = xmlhttp.responseText;
-						alert('Successed Added');
-						readNews();
-						syncNews();
-						globleLog("Successfully add News on Main Node.");
-					}else{
-						//alert(xmlhttp.readyState);
-					}
-				};
-
+				
 				var e = document.getElementById('newsType');
 				var newsType = e.options[e.selectedIndex].value;
 
-				var news = document.getElementById('news').value;
-				xmlhttp.open("GET","http://"+localhost+"/table.php?TYPE=UPDATE&Type="+newsType+"&News="+news,true);
-				xmlhttp.send();
+
+				$.ajax({
+					type: 'POST',
+					url: "http://"+localhost+"/table.php?TYPE=UPDATE&Type="+newsType+"&News="+news,
+					complete: function(result){
+						alert('Successed Added');
+						readNews();
+						syncNews(newsType,news);
+						globleLog("Successfully add News on Main Node.");
+					}
+				});
 			
 			}
 					 
