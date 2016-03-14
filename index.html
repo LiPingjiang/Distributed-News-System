@@ -5,10 +5,16 @@
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 		<script src="//cdn.jsdelivr.net/sockjs/1.0.3/sockjs.min.js"></script>
 		<script src="stomp.js"></script>
+		<script type="text/javascript" src="http://l2.io/ip.js?var=myip"></script>
 
 		<script>
 			var localhost = "192.168.204.129";
 			var nodes = new Array(); //replica nodes
+			var client; // RabbitMQ client
+			var destination = '/exchange/distributedsystem';
+
+
+			localLog( 'Client '+myip+' is browsering the server.');
 			
 
 			function readNews(){
@@ -16,29 +22,50 @@
 					type: 'POST',
 					url: "http://"+localhost+"/table.php?TYPE=GET",
 					complete: function(result){
-						document.getElementById("txtNews").innerHTML = atob(result.responseText);
+						localLog( 'Client '+myip+' read News from the database.');
+						// document.getElementById("txtNews").innerHTML = atob(result.responseText);
+
+
+						document.getElementById("txtNews").innerHTML=''; //clean the previous one
+						var obj = JSON.parse(atob(result.responseText));
+						var tbl=$("<table/>").attr("id","mytable");
+						$("#txtNews").append(tbl);
+						for(var i=0;i<obj.length;i++)
+						{
+							var tr="<tr>";
+							var td1="<td>"+obj[i]["ID"]+"</td>";
+							var td2="<td>"+obj[i]["Type"]+"</td>";
+							var td3="<td>"+obj[i]["News"]+"</td>";
+							var td4="<td>"+obj[i]["Time"]+"</td></tr>";
+
+							$("#mytable").append(tr+td1+td2+td3+td4); 
+
+						} 
 					}
 				});
 			}
 
 			//Used for synchronizing news on replica nodes' database
 			function syncNews(newsType,news){
+
+				// alert(nodes.length );
 				for (var i in nodes) {
 					//nodea[i]['Name']
+					//alert(nodes[i]['IPAddress']);
 					$.ajax({
 						type: 'POST',
-						url: "http://"+nodea[i]['IPAddress']+"/table.php?TYPE=UPDATE&Type="+newsType+"&News="+news,
+						url: "http://"+nodes[i]['IPAddress']+"/table.php?TYPE=UPDATE&Type="+newsType+"&News="+news,
 						complete: function(result){
-							localLog('synchronized News to node: '+ nodea[i]['Name']);
+							localLog('Client '+myip+'synchronized News to node: '+ nodes[i]['Name']);
 						}
 					});
 					}
 			}
-			function localLog(Information){
+			function localLog(Log){
 				var Timestamp = new Date().getTime();
 				$.ajax({
 					type: 'POST',
-					url: "http://"+localhost+"/log.php?TYPE=WRITE&Timestamp="+Timestamp+"&Information="+Information,
+					url: "http://"+localhost+"/log.php?TYPE=WRITE&Timestamp="+Timestamp+"&Log="+Log,
 					complete: function(result){
 						
 					}
@@ -47,25 +74,36 @@
 			}
 			//Using RabbitMQ to send log information
 			function globleLog(info){
-				//RabbitMQ_send("log",info);
+				$.ajax({
+					type: 'POST',
+					url: "http://"+localhost+"/send.php?QUEUE=distributedsystem&MESSAGE="+info,
+					complete: function(result){
+						
+					}
+				});
+
 			}
 			//Get nodes arrry which contain the IP address of the replicas
 			function getNodesIP(){
 
+				
 				$.get("http://"+localhost+"/nodes.php?TYPE=GET", function(result){
 					//alert(result);
 					for(var x in result ){ //x is index, result[x] is the object
 							nodes.push(result[x]);
-							//alert(result[x]['Name']);
+							//alert(result[x]['IPAddress']);
+							
 					}
+					localLog( 'Client '+myip+' refresh IP list from the database.');
 				});
+
 				
 			}
 			function updateNews(){
 				
 				var e = document.getElementById('newsType');
 				var newsType = e.options[e.selectedIndex].value;
-
+				var news = document.getElementById('news').value;
 
 				$.ajax({
 					type: 'POST',
@@ -75,45 +113,23 @@
 						readNews();
 						syncNews(newsType,news);
 						globleLog("Successfully add News on Main Node.");
+						localLog( 'Client '+myip+' update News from the database.');
 					}
 				});
 			
 			}
 					 
-			$(document).ready(function(){
+			function RabbitMQ_send(message_type,message){
+					client.send(destination, {type:message_type}, message);
+			};
 
+
+
+			$(document).ready(function(){
+				
 				readNews();
 				getNodesIP();
-
-				//$(window).on('beforeunload', function(){
-				//      socket.close();
-				//});
-				/*WebSocketStompMock = SockJS;
-				var client, destination;
-				var url = 'ws://127.0.0.1:15674/stomp/websocket';
-				//var url = 'http://127.0.0.1:55674/stomp';
-				var login = 'ds';
-				var passcode = 'abcd1234';
-				destination = '/exchange/distributedsystem';
-
-				client = Stomp.client(url);
-
-				//var ws = new WebSocket('ws://127.0.0.1:15674/ws');
-				//var client = Stomp.over(ws);
-
-				// this allows to display debug logs directly on the web page
-				client.debug = function(str) {
-					$("#debug").append(str + "\n");
-				};
-				// the client is notified when it is connected to the server.
-				client.connect(login, passcode, function(frame) {
-					client.subscribe(destination, function(message) {
-						//call-back function after receive new message can process here
-					});
-				});
-				function RabbitMQ_send(message_type,message){
-					client.send(destination, {type:message_type}, message);
-				};*/
+				globleLog(test);
 									
 			});
 

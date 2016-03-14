@@ -19,7 +19,24 @@
 					type: 'POST',
 					url: "http://"+localhost+"/table.php?TYPE=GET",
 					complete: function(result){
-						document.getElementById("txtNews").innerHTML = atob(result.responseText);
+						// document.getElementById("txtNews").innerHTML = atob(result.responseText);
+
+
+						document.getElementById("txtNews").innerHTML=''; //clean the previous one
+						var obj = JSON.parse(atob(result.responseText));
+						var tbl=$("<table/>").attr("id","mytable");
+						$("#txtNews").append(tbl);
+						for(var i=0;i<obj.length;i++)
+						{
+							var tr="<tr>";
+							var td1="<td>"+obj[i]["ID"]+"</td>";
+							var td2="<td>"+obj[i]["Type"]+"</td>";
+							var td3="<td>"+obj[i]["News"]+"</td>";
+							var td4="<td>"+obj[i]["Time"]+"</td></tr>";
+
+							$("#mytable").append(tr+td1+td2+td3+td4); 
+
+						} 
 					}
 				});
 			}
@@ -89,6 +106,7 @@
 				
 				var e = document.getElementById('newsType');
 				var newsType = e.options[e.selectedIndex].value;
+				var news = document.getElementById('news').value;
 
 
 				$.ajax({

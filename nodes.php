@@ -33,6 +33,7 @@ switch ( $_GET['TYPE'] )
 
 		mysqli_select_db($con,"distributed_system");
 
+		//reset auto increasement index
 		mysqli_query($con,"ALTER TABLE nodes AUTO_INCREMENT = 1");
 		
 		$sql="INSERT INTO `nodes`( `Name`, `IPAddress`, `Password` ) VALUES ('" . $_GET['Name'] . "','" . $_GET['IPAddress'] . "','" . $_GET['Password']  . "')";
